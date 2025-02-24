@@ -31,8 +31,10 @@ const ToolDetail: React.FC = () => {
     const fetchToolDetails = async () => {
       try {
         const response = await getToolDetails(toolId);
-        setTool(response);
+        const toolData = response.tool ? response.tool : response;
+        setTool(toolData);
       } catch (err) {
+        console.error('Erro ao carregar detalhes da ferramenta:', err);
         setError('Erro ao carregar os detalhes da ferramenta');
       } finally {
         setLoading(false);
@@ -45,13 +47,13 @@ const ToolDetail: React.FC = () => {
   const handleReserve = async () => {
     try {
       if (!tool) return;
-      // Formata as datas para o formato "YYYY-MM-DD"
       const formattedStart = startDate.toISOString().split('T')[0];
       const formattedEnd = endDate.toISOString().split('T')[0];
 
       await reserveTool(tool.id, formattedStart, formattedEnd);
       Alert.alert('Sucesso', 'Reserva realizada com sucesso!');
     } catch (err) {
+      console.error('Erro na reserva:', err);
       Alert.alert('Erro', 'Não foi possível realizar a reserva.');
     }
   };
@@ -75,16 +77,15 @@ const ToolDetail: React.FC = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Detalhes da Ferramenta</Text>
-
       {tool && (
         <>
-          {tool.image && (
+          {tool.image ? (
             <Image 
               source={{ uri: tool.image }} 
               style={styles.image} 
               resizeMode="cover" 
             />
-          )}
+          ) : null}
           <Text style={styles.toolName}>Nome: {tool.name}</Text>
           <Text style={styles.toolDescription}>Descrição: {tool.description}</Text>
           <Text style={styles.toolPrice}>Preço: R$ {tool.price.toFixed(2)} / dia</Text>
@@ -95,8 +96,10 @@ const ToolDetail: React.FC = () => {
           {/* Seção de Mais Detalhes */}
           <View style={styles.detailsSection}>
             <Text style={styles.detailsTitle}>Mais Detalhes</Text>
-            <Text>Localização: {tool.latitude}, {tool.longitude}</Text>
-            {/* Aqui você pode adicionar mais informações, como condição da ferramenta, instruções de uso etc. */}
+            <Text>
+              Localização: {tool.latitude ? tool.latitude : 'Não disponível'}, {tool.longitude ? tool.longitude : 'Não disponível'}
+            </Text>
+            {/* Adicione aqui outras informações, se houver */}
           </View>
 
           {/* Seção de Reserva */}

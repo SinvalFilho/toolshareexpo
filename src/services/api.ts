@@ -127,7 +127,7 @@ export const sendChatMessage = async (
 
 export const getNearbyTools = async (latitude: number, longitude: number) => {
   try {
-    const response = await api.get(`/tools`, {
+    const response = await api.get(`/tool`, {
       params: { latitude, longitude },
     });
     return response.data;
@@ -155,6 +155,29 @@ export const getUserData = async () => {
     console.error('Erro ao obter dados do usuário:', error);
     throw error;
   }
+
+  
 };
+
+export const getChats = async (toolId: number) => {
+  try {
+    const response = await api.get(`/tool/${toolId}/chats`);
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar chats:', error);
+    throw new Error('Erro ao carregar chats');
+  }
+};
+
+export const sendToolChatMessage = async (toolId: number, message: string) => {
+  try {
+    const response = await api.post('/chats', { toolId, message });
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao enviar mensagem:', error);
+    throw new Error('Erro ao enviar mensagem. Tente novamente.');
+  }
+};
+
 
 export default api;
