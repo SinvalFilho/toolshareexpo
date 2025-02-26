@@ -10,6 +10,7 @@ import Home from '../screens/Home';
 import Login from '../screens/Login';
 import Register from '../screens/Register';
 import ToolDetail from '../screens/ToolDetail';
+import CreateTool from '../screens/CreateTool';
 import LocationScreen from '../screens/LocationScreen';
 import { RootStackParamList } from '../types/types';
 
@@ -30,6 +31,7 @@ const MainTabs = () => (
     })}
   >
     <Tab.Screen name="Home" component={Home} />
+    <Tab.Screen name="CreateTool" component={CreateTool} />
     <Tab.Screen name="Register" component={Register} />
     {/* <Tab.Screen name="MapScreen" component={MapScreen} /> */}
     {/* <Tab.Screen name="LocationScreen" component={LocationScreen} /> */}
@@ -67,6 +69,11 @@ const AppStack = () => (
       name="ToolDetail"
       component={ToolDetail}
       options={{ title: 'Detalhes da Ferramenta' }}
+    />
+    <Stack.Screen
+      name="CreateTool"
+      component={CreateTool}
+      options={{ title: 'Cadastrar Ferramenta' }}
     />
     <Stack.Screen
     name="LocationScreen"

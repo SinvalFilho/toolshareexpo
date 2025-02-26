@@ -120,14 +120,6 @@ const ToolDetail: React.FC = () => {
           />
 
           <Button title="Reservar Ferramenta" onPress={handleReserve} />
-
-          {/* Botão para iniciar chat */}
-          <View style={styles.chatButton}>
-            <Button 
-              title="Chat com o Locador" 
-              onPress={() => navigation.navigate('Chat', { toolId: tool.id })}
-            />
-          </View>
         </>
       )}
     </ScrollView>

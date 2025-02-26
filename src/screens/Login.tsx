@@ -7,7 +7,7 @@ import {
   ActivityIndicator, 
   StyleSheet 
 } from 'react-native';
-import { login } from '../services/api';
+import { login } from '../services/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../components/styles';
 import Icon from 'react-native-vector-icons/Feather';

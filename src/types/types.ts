@@ -5,10 +5,7 @@ export type RootStackParamList = {
   Home: undefined; 
   ToolDetail: { toolId: number };
   CreateTool: undefined;
-  LocationScreen: undefined;
-  MapScreen: undefined;
-  Chat: { toolId: number };
-};
+  LocationScreen: undefined;}
 
 declare global {
   namespace ReactNavigation {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Tool, ToolData } from '../types';
+import { Tool } from '../types';
 
 const API_BASE_URL = 'http://192.168.18.196:3333';
 
@@ -21,26 +21,6 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
-export const login = async (email: string, password: string) => {
-  try {
-    const response = await api.post('/session', { email, password });
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      const backendMessage = error.response.data?.message;
-      
-      if (error.response.status === 401) {
-        throw new Error('Credenciais inválidas. Por favor, verifique e tente novamente.');
-      }
-      
-      if (backendMessage) {
-        throw new Error(backendMessage);
-      }
-    }
-    throw new Error('Erro desconhecido. Tente novamente.');
-  }
-};
 
 export const getTools = async (): Promise<{ tools: Tool[] }> => {
   try {
@@ -92,80 +72,23 @@ export const reserveTool = async (
   }
 };
 
-export const createTool = async (toolData: ToolData) => {
+export const createTool = async (toolData: {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  rating: number;
+  status: string;
+  image: string;
+  latitude: string;
+  longitude: string;
+}): Promise<{ message: string; tool: Tool }> => {
   try {
-    const response = await api.post('/tool', toolData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error: any) { 
-    console.error('Erro ao criar ferramenta:', error.response?.data);
-    throw error;
-  }
-};
-
-export const getUserReservations = async () => {
-  try {
-    const response = await api.get('/reservations');
+    const response = await api.post('/tools', toolData);
     return response.data;
   } catch (error) {
-    console.error('Erro ao obter reservas:', error);
-    throw new Error('Erro ao carregar suas reservas.');
-  }
-};
-
-export const sendChatMessage = async (
-  reservationId: number,
-  message: string
-) => {
-  try {
-    const response = await api.post(`/reservations/${reservationId}/chat`, { message });
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao enviar mensagem:', error);
-    throw new Error('Erro ao enviar mensagem. Tente novamente.');
-  }
-};
-
-export const getCategories = async () => {
-  try {
-    const response = await api.get('/category');
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao obter categorias:', error);
-    throw new Error('Erro ao carregar categorias');
-  }
-};
-
-export const getUserData = async () => {
-  try {
-    const response = await api.get('/user');
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao obter dados do usuário:', error);
-    throw error;
-  }
-};
-
-export const getChats = async (toolId: number) => {
-  try {
-    const response = await api.get(`/tool/${toolId}/chats`);
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao buscar chats:', error);
-    throw new Error('Erro ao carregar chats');
-  }
-};
-
-export const sendToolChatMessage = async (toolId: number, message: string) => {
-  try {
-    const response = await api.post('/chats', { toolId, message });
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao enviar mensagem:', error);
-    throw new Error('Erro ao enviar mensagem. Tente novamente.');
+    console.error('Erro ao criar ferramenta:', error);
+    throw new Error('Erro ao criar a ferramenta. Tente novamente.');
   }
 };
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
-import axios from 'axios';
+import { register } from '../services/auth';
 
 export default function RegisterScreen() {
   const [form, setForm] = useState({
@@ -80,12 +80,12 @@ export default function RegisterScreen() {
     setIsLoading(true);
 
     try {
-      await axios.post('http://192.168.18.196:3333/user', form);
+      await register(form); // Usa a função de registro do auth.ts
       Alert.alert('Sucesso', 'Usuário registrado com sucesso!');
       setIsLoading(false);
-      // Optionally navigate to login or home page
+      // Navegar para a tela de login ou home após o registro
     } catch (error: any) {
-      Alert.alert('Erro', error.response?.data?.message || 'Erro ao registrar usuário.');
+      Alert.alert('Erro', error.message || 'Erro ao registrar usuário.');
       setIsLoading(false);
     }
   };
