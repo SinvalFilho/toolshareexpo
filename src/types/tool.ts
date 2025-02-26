@@ -7,8 +7,8 @@ export type Tool = {
   category: string;
   rating: number;
   status: 'disponível' | 'locada';
-  latitude: number;
-  longitude: number;
+  latitude: string;
+  longitude: string;
   created_at: string;
   updated_at: string;
   image?: string;

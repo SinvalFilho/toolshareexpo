@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  StyleSheet 
+} from 'react-native';
 import { login } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../components/styles';
+import Icon from 'react-native-vector-icons/Feather';
 
 export default function Login({ navigation, onLogin }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleLogin = async () => {
     setError('');
@@ -17,12 +26,17 @@ export default function Login({ navigation, onLogin }: any) {
       return;
     }
   
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Por favor, insira um email válido.');
+      return;
+    }
+  
     setIsLoading(true);
   
     try {
       const data = await login(email, password);
-      console.log('Login Response:', data);
-  
+
       if (data?.token) {
         const userData = {
           '@access_token': data.token,
@@ -38,14 +52,12 @@ export default function Login({ navigation, onLogin }: any) {
   
         if (validUserData.length > 0) {
           await AsyncStorage.multiSet(validUserData);
-          console.log('Dados do usuário salvos:', validUserData);
+          console.log('Login realizado com sucesso!');
   
           if (typeof onLogin === 'function') {
             onLogin(data);
           }
   
-          // Adicionando um log para verificar a navegação
-          console.log('Navegando para Home');
           navigation.navigate('Home');
         } else {
           setError('Erro ao salvar dados do usuário');
@@ -53,14 +65,9 @@ export default function Login({ navigation, onLogin }: any) {
       } else {
         setError('Erro desconhecido ao realizar login');
       }
-    } catch (err: unknown) {
-      console.error('Erro ao realizar login:', err);
-  
+    } catch (err: any) {
       if (err instanceof Error) {
         setError(err.message);
-      } else if (typeof err === 'object' && err !== null && 'response' in err) {
-        const errorResponse = err as { response?: { data?: { message?: string } } };
-        setError(errorResponse.response?.data?.message || 'Credenciais inválidas ou erro na conexão');
       } else {
         setError('Ocorreu um erro inesperado. Tente novamente.');
       }
@@ -68,8 +75,6 @@ export default function Login({ navigation, onLogin }: any) {
       setIsLoading(false);
     }
   };
-  
-  
 
   return (
     <View style={styles.container}>
@@ -86,29 +91,44 @@ export default function Login({ navigation, onLogin }: any) {
         keyboardType="email-address"
       />
       
-      <TextInput
-        style={styles.input}
-        placeholder="Senha"
-        placeholderTextColor={colors.textSecondary}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Senha"
+          placeholderTextColor={colors.textSecondary}
+          secureTextEntry={!isPasswordVisible}
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TouchableOpacity 
+          onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+          style={styles.eyeIcon}
+        >
+          <Icon 
+            name={isPasswordVisible ? 'eye' : 'eye-off'}
+            size={24}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
       
       <View style={styles.buttonContainer}>
         {isLoading ? (
           <ActivityIndicator size="small" color={colors.primary} />
         ) : (
-          <Button title="Entrar" onPress={handleLogin} color={colors.primary} />
+          <TouchableOpacity onPress={handleLogin} style={styles.loginButton}>
+            <Text style={styles.buttonText}>Entrar</Text>
+          </TouchableOpacity>
         )}
       </View>
       
       <View style={styles.buttonContainer}>
-        <Button 
-          title="Criar conta" 
+        <TouchableOpacity 
           onPress={() => navigation.navigate('Register')} 
-          color={colors.secondary} 
-        />
+          style={styles.registerButton}
+        >
+          <Text style={styles.registerText}>Criar conta</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -138,6 +158,25 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surface,
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: colors.divider,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 15,
+    backgroundColor: colors.surface,
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: colors.text,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
   error: {
     color: colors.error,
     marginBottom: 15,
@@ -148,5 +187,27 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 8,
     overflow: 'hidden',
+  },
+  loginButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  registerButton: {
+    backgroundColor: colors.secondary,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  registerText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });

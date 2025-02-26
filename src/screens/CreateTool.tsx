@@ -1,21 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { createTool } from '../services/api';
-import { ToolCreateForm } from '../types';
 import { Controller, useForm } from 'react-hook-form';
 import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+
+interface ToolFormData {
+  name: string;
+  description?: string;
+  price: string;
+  category: string;
+  status?: string;
+  rating: number;
+  image?: string;
+}
 
 const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { control, handleSubmit, formState: { errors } } = useForm();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [image, setImage] = useState('');
-  const [userId, setUserId] = useState<number>(1);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ToolFormData>({
+    defaultValues: {
+      name: '',
+      description: '',
+      price: '',
+      image: '',
+      category: 'Ferramentas Elétricas',
+      status: 'disponível',
+      rating: 0,
+    },
+  });
 
-  const handleCreateTool = async (data: ToolCreateForm) => {
-    if (!data.name || !data.description || !data.price || !data.category || !data.status || !data.image) {
-      Alert.alert('Erro', 'Preencha todos os campos');
+  const [userId, setUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const storedUserId = await AsyncStorage.getItem('@user_id');
+      if (storedUserId) setUserId(Number(storedUserId));
+    };
+    fetchUserId();
+  }, []);
+
+  const onSubmit = async (data: ToolFormData) => {
+    // Verifica os campos obrigatórios (name, price, category e image)
+    if (!data.name || !data.price || !data.category || !data.image) {
+      Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
       return;
     }
 
@@ -25,29 +55,30 @@ const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
       return;
     }
 
+    if (!userId) {
+      Alert.alert('Erro', 'Usuário não autenticado');
+      return;
+    }
+
+    const toolData = {
+      name: data.name,
+      description: data.description,
+      price: parsedPrice,
+      category: data.category,
+      status: data.status,
+      rating: data.rating,
+      image: data.image,
+      user_id: userId,
+    };
+
     try {
-      const toolData: ToolCreateForm = {
-        name: data.name,
-        description: data.description,
-        price: parsedPrice,
-        category: data.category,
-        status: data.status,
-        image: data.image,
-        user_id: userId,
-      };
-
-      console.log('Criando ferramenta com os dados:', toolData);
-      const response = await createTool(toolData);
-      console.log('Response:', response);
-
-      Alert.alert('Ferramenta Criada', 'A ferramenta foi cadastrada com sucesso!');
-
-      setName('');
-      setDescription('');
-      setPrice('');
-      setImage('');
-
-      navigation.goBack();
+      const response = await axios.post('http://192.168.18.196:3333/tool', toolData);
+      if (response.data.message === 'Tool created') {
+        Alert.alert('Ferramenta Criada', 'A ferramenta foi cadastrada com sucesso!');
+        navigation.goBack();
+      } else {
+        Alert.alert('Erro', 'Houve um problema ao criar a ferramenta');
+      }
     } catch (error) {
       console.error('Erro ao criar ferramenta:', error);
       Alert.alert('Erro', 'Não foi possível criar a ferramenta. Tente novamente.');
@@ -58,42 +89,64 @@ const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Cadastrar Nova Ferramenta</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nome da Ferramenta"
-        value={name}
-        onChangeText={setName}
+      <Controller
+        control={control}
+        name="name"
+        rules={{ required: 'Nome é obrigatório', minLength: { value: 3, message: 'Mínimo 3 caracteres' } }}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            style={styles.input}
+            placeholder="Nome da Ferramenta"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
       />
+      {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Descrição"
-        value={description}
-        onChangeText={setDescription}
-        multiline
+      <Controller
+        control={control}
+        name="description"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            style={styles.input}
+            placeholder="Descrição"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            multiline
+          />
+        )}
       />
+      {errors.description && <Text style={styles.errorText}>{errors.description.message}</Text>}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Preço por período"
-        value={price}
-        onChangeText={setPrice}
-        keyboardType="numeric"
+      <Controller
+        control={control}
+        name="price"
+        rules={{ required: 'Preço é obrigatório' }}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            style={styles.input}
+            placeholder="Preço por período"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            keyboardType="numeric"
+          />
+        )}
       />
+      {errors.price && <Text style={styles.errorText}>{errors.price.message}</Text>}
 
-      {/* Picker para seleção de categoria */}
       <Controller
         control={control}
         name="category"
+        rules={{ required: 'Categoria é obrigatória' }}
         render={({ field: { onChange, value } }) => (
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Categoria</Text>
             <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={value}
-                onValueChange={onChange}
-                style={styles.picker}
-              >
+              <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
                 <Picker.Item label="Ferramentas Elétricas" value="Ferramentas Elétricas" />
                 <Picker.Item label="Ferramentas Manuais" value="Ferramentas Manuais" />
                 <Picker.Item label="Medição e instrumentação" value="Medição e instrumentação" />
@@ -102,14 +155,11 @@ const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
                 <Picker.Item label="Acessórios" value="Acessórios" />
               </Picker>
             </View>
-            {errors.category && (
-              <Text style={styles.errorText}>{errors.category.message}</Text>
-            )}
           </View>
         )}
       />
+      {errors.category && <Text style={styles.errorText}>{errors.category.message}</Text>}
 
-      {/* Picker para seleção de status */}
       <Controller
         control={control}
         name="status"
@@ -117,31 +167,50 @@ const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Status</Text>
             <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={value}
-                onValueChange={onChange}
-                style={styles.picker}
-              >
+              <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
                 <Picker.Item label="Disponível" value="disponível" />
                 <Picker.Item label="Locada" value="locada" />
+                <Picker.Item label="Em Manutenção" value="em manutenção" />
               </Picker>
             </View>
-            {errors.status && (
-              <Text style={styles.errorText}>{errors.status.message}</Text>
-            )}
           </View>
         )}
       />
 
-      {/* Campo para URL da imagem */}
-      <TextInput
-        style={styles.input}
-        placeholder="URL da Imagem"
-        value={image}
-        onChangeText={setImage}
+      <Controller
+        control={control}
+        name="rating"
+        rules={{ required: 'Avaliação é obrigatória' }}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            style={styles.input}
+            placeholder="Avaliação (0 a 5)"
+            onBlur={onBlur}
+            onChangeText={(val) => onChange(Number(val))}
+            value={String(value)}
+            keyboardType="numeric"
+          />
+        )}
       />
+      {errors.rating && <Text style={styles.errorText}>{errors.rating.message}</Text>}
 
-      <Button title="Cadastrar Ferramenta" onPress={handleSubmit(handleCreateTool)} />
+      <Controller
+        control={control}
+        name="image"
+        rules={{ required: 'URL da imagem é obrigatória' }}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            style={styles.input}
+            placeholder="URL da Imagem"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+      />
+      {errors.image && <Text style={styles.errorText}>{errors.image.message}</Text>}
+
+      <Button title="Cadastrar Ferramenta" onPress={handleSubmit(onSubmit)} />
     </View>
   );
 };
@@ -186,6 +255,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     fontSize: 12,
+    marginBottom: 8,
   },
 });
 

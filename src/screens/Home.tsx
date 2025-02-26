@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../components/styles';
-import { getTools } from '../services/api';
+import { getTools, getNearbyTools } from '../services/api';
 import { Tool } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 
 export default function Home({ navigation }: any) {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -12,12 +14,31 @@ export default function Home({ navigation }: any) {
   const [userName, setUserName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
+
+  // Obter a localização do usuário
+  const getLocation = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Permissão de localização negada');
+      return;
+    }
+
+    let location = await Location.getCurrentPositionAsync({});
+    setUserLocation(location);
+  };
 
   const fetchTools = async () => {
     try {
-      const toolsData = await getTools();
-      setTools(toolsData.tools);
-      setError(null);
+      if (userLocation) {
+        const toolsData = await getNearbyTools(userLocation.coords.latitude, userLocation.coords.longitude);
+        setTools(toolsData.tools);
+        setError(null);
+      } else {
+        const toolsData = await getTools();
+        setTools(toolsData.tools);
+        setError(null);
+      }
     } catch (error) {
       console.error('Erro ao carregar ferramentas', error);
       setError('Erro ao carregar as ferramentas');
@@ -51,14 +72,12 @@ export default function Home({ navigation }: any) {
   useFocusEffect(
     React.useCallback(() => {
       const loadData = async () => {
+        await getLocation();
         await fetchUserName();
-        const token = await AsyncStorage.getItem('@access_token');
-        if (token) {
-          await fetchTools();
-        }
+        await fetchTools();
       };
       loadData();
-    }, [])
+    }, [userLocation]) // Recarrega as ferramentas quando a localização muda
   );
 
   const handleLogout = async () => {
@@ -83,6 +102,48 @@ export default function Home({ navigation }: any) {
     );
   };
 
+  const handleToolDetail = (toolId: number) => {
+    if (isLoggedIn) {
+      navigation.navigate('ToolDetail', { toolId });
+    } else {
+      Alert.alert(
+        'Login Necessário',
+        'Você precisa estar logado para ver os detalhes da ferramenta.',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Login',
+            onPress: () => navigation.navigate('Login'),
+          },
+        ]
+      );
+    }
+  };
+
+  const handleAddTool = () => {
+    if (isLoggedIn) {
+      navigation.navigate('CreateTool');
+    } else {
+      Alert.alert(
+        'Login Necessário',
+        'Você precisa estar logado para adicionar uma nova ferramenta.',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Login',
+            onPress: () => navigation.navigate('Login'),
+          },
+        ]
+      );
+    }
+  };
+
   const renderTool = ({ item }: { item: Tool }) => (
     <View style={styles.toolCard}>
       <Text style={styles.toolName}>{item.name}</Text>
@@ -90,27 +151,24 @@ export default function Home({ navigation }: any) {
       <Text style={styles.toolPrice}>R$ {item.price.toFixed(2)} / dia</Text>
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('ToolDetail', { toolId: item.id })}
+        onPress={() => handleToolDetail(item.id)}
       >
         <Text style={styles.buttonText}>Ver Detalhes</Text>
       </TouchableOpacity>
     </View>
   );
 
-  if (!isLoggedIn) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Você não está logado!</Text>
-        <Button title="Login" onPress={() => navigation.navigate('Login')} color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>Olá, {userName}</Text>
-        <Button title="Logout" onPress={handleLogout} color={colors.error} />
+        {isLoggedIn ? (
+          <>
+            <Text style={styles.greeting}>Olá, {userName}</Text>
+            <Button title="Logout" onPress={handleLogout} color={colors.error} />
+          </>
+        ) : (
+          <Button title="Login" onPress={() => navigation.navigate('Login')} color={colors.primary} />
+        )}
       </View>
 
       <Text style={styles.title}>Bem-vindo à ToolShare</Text>
@@ -119,22 +177,62 @@ export default function Home({ navigation }: any) {
         <ActivityIndicator size="large" color={colors.primary} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
+      ) : userLocation ? (
+        <>
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: userLocation.coords.latitude,
+              longitude: userLocation.coords.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          >
+            <Marker
+              coordinate={{
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+              }}
+              title="Minha Localização"
+              description="Você está aqui!"
+              pinColor="blue"
+            />
+
+            {tools.map((tool) => (
+              <Marker
+                key={tool.id}
+                coordinate={{
+                  latitude: parseFloat(tool.latitude),
+                  longitude: parseFloat(tool.longitude),
+                }}
+                title={tool.name}
+                description={`R$ ${tool.price.toFixed(2)} / dia`}
+                pinColor="red"
+                onPress={() => handleToolDetail(tool.id)}
+              />
+            ))}
+          </MapView>
+
+          <FlatList
+            data={tools}
+            renderItem={renderTool}
+            keyExtractor={(item) => item.id.toString()}
+            initialNumToRender={5}
+            maxToRenderPerBatch={10}
+          />
+        </>
       ) : (
-        <FlatList
-          data={tools}
-          renderItem={renderTool}
-          keyExtractor={(item) => item.id.toString()}
-          initialNumToRender={5}
-          maxToRenderPerBatch={10}
-        />
+        <Text style={styles.error}>Não foi possível obter a localização.</Text>
       )}
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => navigation.navigate('CreateTool')}
-      >
-        <Text style={styles.addButtonText}>Adicionar Nova Ferramenta</Text>
-      </TouchableOpacity>
+      {isLoggedIn && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAddTool}
+        >
+          <Text style={styles.addButtonText}>Adicionar Nova Ferramenta</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -214,5 +312,10 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  map: {
+    height: 300,
+    width: '100%',
+    marginBottom: 20,
   },
 });

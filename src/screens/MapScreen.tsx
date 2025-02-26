@@ -4,18 +4,37 @@ import { View, StyleSheet, Text, TextInput } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import useGeolocation from '../hooks/useGeolocation';
-import { getNearbyTools } from '../services/api';
+import { getNearbyTools } from '../services/api';  // Função que retorna as ferramentas perto de você
 import { Tool } from '../types';
 
 const categories = ['Todas', 'Furadeira', 'Serra', 'Andaime', 'Outros'];
 
+// Função para calcular a distância usando a fórmula de Haversine
+const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+  const R = 6371; // Raio da Terra em quilômetros
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distância em quilômetros
+};
+
 const MapScreen = () => {
   const { location } = useGeolocation();
-  const [tools, setTools] = useState<Tool[]>([]);
-  const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
+  const [tools, setTools] = useState<Tool[]>([]);  // Armazenando ferramentas
+  const [filteredTools, setFilteredTools] = useState<Tool[]>([]);  // Ferramentas filtradas
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [maxPrice, setMaxPrice] = useState('');
-
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -34,15 +53,17 @@ const MapScreen = () => {
   }, [location]);
 
   useEffect(() => {
-    let filtered = Array.isArray(tools) ? [...tools] : [];
-    
+    let filtered = [...tools];
+
     if (selectedCategory !== 'Todas') {
       filtered = filtered.filter(tool => tool.category === selectedCategory);
     }
 
     if (maxPrice) {
       const price = parseFloat(maxPrice);
-      if (!isNaN(price)) filtered = filtered.filter(tool => tool.price <= price);
+      if (!isNaN(price)) {
+        filtered = filtered.filter(tool => tool.price <= price);
+      }
     }
 
     setFilteredTools(filtered);
@@ -99,22 +120,38 @@ const MapScreen = () => {
 
         {Array.isArray(filteredTools) && filteredTools
           .filter(tool => 
-            typeof tool.latitude === 'number' && 
-            typeof tool.longitude === 'number'
+            typeof tool.latitude === 'string' && 
+            typeof tool.longitude === 'string'
           )
-          .map(tool => (
-            <Marker
-              key={tool.id}
-              coordinate={{
-                latitude: tool.latitude,
-                longitude: tool.longitude,
-              }}
-              title={tool.name}
-              description={`R$ ${tool.price?.toFixed(2) || '0.00'} / dia`}
-              pinColor="red"
-              onPress={() => navigation.navigate('ToolDetail', { toolId: tool.id })}
-            />
-          ))}
+          .map(tool => {
+            const latitude = parseFloat(tool.latitude);
+            const longitude = parseFloat(tool.longitude);
+
+            if (isNaN(latitude) || isNaN(longitude)) {
+              return null;
+            }
+
+            const distance = haversineDistance(
+              location.coords.latitude,
+              location.coords.longitude,
+              latitude,
+              longitude
+            );
+
+            return (
+              <Marker
+                key={tool.id}
+                coordinate={{
+                  latitude: latitude,
+                  longitude: longitude,
+                }}
+                title={tool.name}
+                description={`R$ ${tool.price?.toFixed(2) || '0.00'} / dia | Distância: ${distance.toFixed(2)} km`}
+                pinColor="red"
+                onPress={() => navigation.navigate('ToolDetail', { toolId: tool.id })}  // Navegação para detalhes da ferramenta
+              />
+            );
+          })}
       </MapView>
     </View>
   );

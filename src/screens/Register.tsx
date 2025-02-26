@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import axios from 'axios';
 
@@ -22,6 +14,7 @@ export default function RegisterScreen() {
     latitude: '',
     longitude: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (field: string, value: string) => {
     if (field === 'cpf') {
@@ -35,7 +28,6 @@ export default function RegisterScreen() {
     } else if (field === 'phone') {
       const numericValue = value.replace(/\D/g, '').slice(0, 11);
       let formattedPhone = numericValue;
-
       if (numericValue.length <= 2) {
         formattedPhone = `(${numericValue}`;
       } else if (numericValue.length <= 7) {
@@ -43,7 +35,6 @@ export default function RegisterScreen() {
       } else {
         formattedPhone = `(${numericValue.slice(0, 2)})${numericValue.slice(2, 7)}-${numericValue.slice(7)}`;
       }
-
       setForm({ ...form, phone: formattedPhone });
     } else {
       setForm({ ...form, [field]: value });
@@ -81,11 +72,21 @@ export default function RegisterScreen() {
       return;
     }
 
+    if (!form.latitude || !form.longitude) {
+      Alert.alert('Localização não obtida', 'Por favor, obtenha a localização antes de continuar.');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
       await axios.post('http://192.168.18.196:3333/user', form);
       Alert.alert('Sucesso', 'Usuário registrado com sucesso!');
+      setIsLoading(false);
+      // Optionally navigate to login or home page
     } catch (error: any) {
       Alert.alert('Erro', error.response?.data?.message || 'Erro ao registrar usuário.');
+      setIsLoading(false);
     }
   };
 
@@ -155,8 +156,8 @@ export default function RegisterScreen() {
         <Text style={styles.buttonText}>Obter Localização Atual</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={handleRegister} style={styles.registerButton}>
-        <Text style={styles.buttonText}>Cadastrar</Text>
+      <TouchableOpacity onPress={handleRegister} style={styles.registerButton} disabled={isLoading}>
+        {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Cadastrar</Text>}
       </TouchableOpacity>
     </ScrollView>
   );

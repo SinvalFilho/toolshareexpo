@@ -33,8 +33,8 @@ const MainTabs = () => (
   >
     <Tab.Screen name="Home" component={Home} />
     <Tab.Screen name="CreateTool" component={CreateTool} />
-    <Tab.Screen name="Register" component={Register} />
-    {/* <Tab.Screen name="MapScreen" component={MapScreen} /> */}
+    {/* <Tab.Screen name="Register" component={Register} /> */}
+    <Tab.Screen name="MapScreen" component={MapScreen} />
     {/* <Tab.Screen name="LocationScreen" component={LocationScreen} /> */}
     <Tab.Screen name="Login" component={Login} />
   </Tab.Navigator>

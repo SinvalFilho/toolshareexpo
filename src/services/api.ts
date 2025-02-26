@@ -27,39 +27,21 @@ api.interceptors.request.use(
 export const login = async (email: string, password: string) => {
   try {
     const response = await api.post('/session', { email, password });
-    console.log('Resposta do login:', response.data);
-    if (response.data?.token) {
-      await AsyncStorage.setItem('@access_token', response.data.token);
+
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      const backendMessage = error.response.data?.message;
       
-      if (response.data.user) {
-        await AsyncStorage.setItem('@user_data', JSON.stringify(response.data.user));
+      if (error.response.status === 401) {
+        throw new Error('Credenciais inválidas. Por favor, verifique e tente novamente.');
       }
       
-      return response.data;
-    } else {
-      throw new Error('Token não retornado no login');
+      if (backendMessage) {
+        throw new Error(backendMessage);
+      }
     }
-  } catch (error) {
-    console.error('Erro ao realizar login:', error);
-    throw new Error('Erro ao realizar login. Verifique suas credenciais.');
-  }
-};
-
-export const registerUser = async (userData: FormData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/user`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Erro ao registrar");
-    }
-    return response.json();
-  } catch (error) {
-    console.error("Erro no registro:", error);
-    throw error;
+    throw new Error('Erro desconhecido. Tente novamente.');
   }
 };
 
