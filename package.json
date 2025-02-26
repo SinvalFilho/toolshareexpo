@@ -9,7 +9,9 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.1",
+    "@expo/metro-runtime": "~4.0.1",
+    "@hookform/resolvers": "^4.1.2",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/datetimepicker": "8.2.0",
     "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
@@ -17,24 +19,45 @@
     "@react-navigation/stack": "^7.1.1",
     "axios": "^1.7.9",
     "expo": "~52.0.35",
+    "expo-image-picker": "~16.0.6",
     "expo-location": "~18.0.7",
     "expo-status-bar": "~2.0.1",
+    "jwt-decode": "^4.0.0",
     "material-icons": "^1.13.14",
     "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-hook-form": "^7.54.2",
     "react-native": "0.76.7",
     "react-native-geolocation-service": "^5.3.1",
+    "react-native-get-random-values": "^1.11.0",
+    "react-native-google-places-autocomplete": "^2.5.7",
     "react-native-maps": "1.18.0",
     "react-native-modal-selector": "^2.1.2",
     "react-native-paper": "^5.13.1",
     "react-native-safe-area-context": "^5.2.0",
     "react-native-screens": "^4.8.0",
-    "react-native-vector-icons": "^10.2.0"
+    "react-native-vector-icons": "^10.2.0",
+    "react-native-web": "~0.19.13",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@types/jwt-decode": "^2.2.1",
     "@types/react": "~18.3.12",
     "@types/react-native-vector-icons": "^6.4.18",
     "typescript": "^5.3.3"
   },
-  "private": true
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SinvalFilho/toolshareexpo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SinvalFilho/toolshareexpo/issues"
+  },
+  "homepage": "https://github.com/SinvalFilho/toolshareexpo#readme",
+  "description": ""
 }

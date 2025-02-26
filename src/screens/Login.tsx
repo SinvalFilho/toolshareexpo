@@ -16,36 +16,46 @@ export default function Login({ navigation, onLogin }: any) {
       setError('Preencha todos os campos');
       return;
     }
-
+  
     setIsLoading(true);
-    
+  
     try {
       const data = await login(email, password);
       console.log('Login Response:', data);
-
+  
       if (data?.token) {
-        // Salva os dados relevantes do usuário no AsyncStorage
-        await AsyncStorage.multiSet([
-          ['@access_token', data.token],
-          ['@user_name', data.name || ''],
-          ['@user_email', data.email || ''],
-          ['@user_id', String(data.id) || ''],
-          ['@user_type', data.type || '']
-        ]);
-
-        console.log('Dados do usuário salvos:', data);
-        
-        if (typeof onLogin === 'function') {
-          onLogin(data);
+        const userData = {
+          '@access_token': data.token,
+          '@user_name': data.name || '',
+          '@user_email': data.email || '',
+          '@user_id': String(data.id) || '',
+          '@user_type': data.type || '',
+        };
+  
+        const validUserData: [string, string][] = Object.entries(userData)
+          .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+          .map(([key, value]) => [key, String(value)] as [string, string]);
+  
+        if (validUserData.length > 0) {
+          await AsyncStorage.multiSet(validUserData);
+          console.log('Dados do usuário salvos:', validUserData);
+  
+          if (typeof onLogin === 'function') {
+            onLogin(data);
+          }
+  
+          // Adicionando um log para verificar a navegação
+          console.log('Navegando para Home');
+          navigation.navigate('Home');
+        } else {
+          setError('Erro ao salvar dados do usuário');
         }
-        
-        navigation.navigate('Home');
       } else {
         setError('Erro desconhecido ao realizar login');
       }
     } catch (err: unknown) {
       console.error('Erro ao realizar login:', err);
-    
+  
       if (err instanceof Error) {
         setError(err.message);
       } else if (typeof err === 'object' && err !== null && 'response' in err) {
@@ -58,6 +68,8 @@ export default function Login({ navigation, onLogin }: any) {
       setIsLoading(false);
     }
   };
+  
+  
 
   return (
     <View style={styles.container}>

@@ -1,180 +1,208 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { colors } from '../components/styles';
-import { register } from '../services/api';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  StyleSheet,
+} from 'react-native';
+import * as Location from 'expo-location';
+import axios from 'axios';
 
-export default function Register({ navigation }: any) {
+export default function RegisterScreen() {
   const [form, setForm] = useState({
-    username: '',
+    name: '',
     email: '',
     password: '',
-    confirmPassword: '',
+    phone: '',
+    cpf: '',
+    address: '',
+    latitude: '',
+    longitude: '',
   });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+
+  const handleChange = (field: string, value: string) => {
+    if (field === 'cpf') {
+      const formattedCpf = value
+        .replace(/\D/g, '')
+        .slice(0, 11)
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+        .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+      setForm({ ...form, cpf: formattedCpf });
+    } else if (field === 'phone') {
+      const numericValue = value.replace(/\D/g, '').slice(0, 11);
+      let formattedPhone = numericValue;
+
+      if (numericValue.length <= 2) {
+        formattedPhone = `(${numericValue}`;
+      } else if (numericValue.length <= 7) {
+        formattedPhone = `(${numericValue.slice(0, 2)})${numericValue.slice(2)}`;
+      } else {
+        formattedPhone = `(${numericValue.slice(0, 2)})${numericValue.slice(2, 7)}-${numericValue.slice(7)}`;
+      }
+
+      setForm({ ...form, phone: formattedPhone });
+    } else {
+      setForm({ ...form, [field]: value });
+    }
+  };
+
+  const getLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão negada', 'Permissão para acessar a localização foi negada.');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      setForm({
+        ...form,
+        latitude: location.coords.latitude.toString(),
+        longitude: location.coords.longitude.toString(),
+      });
+      Alert.alert('Localização obtida com sucesso!');
+    } catch (error) {
+      Alert.alert('Erro ao obter localização', (error as Error).message);
+    }
+  };
 
   const handleRegister = async () => {
-    setError('');
-    if (!form.username || !form.email || !form.password || !form.confirmPassword) {
-      setError('Preencha todos os campos');
+    if (form.cpf.replace(/\D/g, '').length !== 11) {
+      Alert.alert('CPF inválido', 'O CPF deve conter 11 dígitos.');
       return;
     }
 
-    if (form.password !== form.confirmPassword) {
-      setError('As senhas não coincidem');
+    if (form.phone.replace(/\D/g, '').length !== 11) {
+      Alert.alert('Telefone inválido', 'O telefone deve conter 11 dígitos.');
       return;
     }
 
-    setLoading(true);
     try {
-      await register(form);
-      navigation.navigate('Login');
-    } catch (err) {
-      setError('Erro no registro. Verifique seus dados.');
-    } finally {
-      setLoading(false);
+      await axios.post('http://192.168.18.196:3333/user', form);
+      Alert.alert('Sucesso', 'Usuário registrado com sucesso!');
+    } catch (error: any) {
+      Alert.alert('Erro', error.response?.data?.message || 'Erro ao registrar usuário.');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Criar Nova Conta</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Cadastro de Usuário</Text>
 
-        {error && <Text style={styles.error}>{error}</Text>}
+      <TextInput
+        placeholder="Nome"
+        value={form.name}
+        onChangeText={(value) => handleChange('name', value)}
+        style={styles.input}
+      />
+      <TextInput
+        placeholder="Email"
+        value={form.email}
+        onChangeText={(value) => handleChange('email', value)}
+        keyboardType="email-address"
+        style={styles.input}
+      />
+      <TextInput
+        placeholder="Senha"
+        value={form.password}
+        onChangeText={(value) => handleChange('password', value)}
+        secureTextEntry
+        style={styles.input}
+      />
+      <TextInput
+        placeholder="Telefone (00)90000-0000"
+        value={form.phone}
+        onChangeText={(value) => handleChange('phone', value)}
+        keyboardType="phone-pad"
+        style={styles.input}
+        maxLength={15}
+      />
+      <TextInput
+        placeholder="CPF 000.000.000-00"
+        value={form.cpf}
+        onChangeText={(value) => handleChange('cpf', value)}
+        keyboardType="numeric"
+        style={styles.input}
+        maxLength={14}
+      />
+      <TextInput
+        placeholder="Endereço"
+        value={form.address}
+        onChangeText={(value) => handleChange('address', value)}
+        style={styles.input}
+      />
 
-        <View style={styles.inputContainer}>
-          <Icon name="person" size={20} color={colors.textSecondary} style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Nome de usuário"
-            placeholderTextColor={colors.textSecondary}
-            value={form.username}
-            onChangeText={(t) => setForm({ ...form, username: t })}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Icon name="email" size={20} color={colors.textSecondary} style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="email-address"
-            value={form.email}
-            onChangeText={(t) => setForm({ ...form, email: t })}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Icon name="lock" size={20} color={colors.textSecondary} style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Senha"
-            placeholderTextColor={colors.textSecondary}
-            secureTextEntry
-            value={form.password}
-            onChangeText={(t) => setForm({ ...form, password: t })}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Icon name="lock" size={20} color={colors.textSecondary} style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Confirme a senha"
-            placeholderTextColor={colors.textSecondary}
-            secureTextEntry
-            value={form.confirmPassword}
-            onChangeText={(t) => setForm({ ...form, confirmPassword: t })}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color={colors.text} />
-          ) : (
-            <Text style={styles.buttonText}>Criar Conta</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.link} onPress={() => navigation.goBack()}>
-          <Text style={styles.linkText}>Já tem conta? Faça login</Text>
-        </TouchableOpacity>
+      <View style={styles.locationContainer}>
+        <TextInput
+          placeholder="Latitude"
+          value={form.latitude}
+          editable={false}
+          style={[styles.input, styles.locationInput]}
+        />
+        <TextInput
+          placeholder="Longitude"
+          value={form.longitude}
+          editable={false}
+          style={[styles.input, styles.locationInput]}
+        />
       </View>
-    </View>
+
+      <TouchableOpacity onPress={getLocation} style={styles.locationButton}>
+        <Text style={styles.buttonText}>Obter Localização Atual</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={handleRegister} style={styles.registerButton}>
+        <Text style={styles.buttonText}>Cadastrar</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
     padding: 20,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 15,
-    padding: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
   },
   title: {
     fontSize: 24,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 25,
+    fontWeight: 'bold',
     textAlign: 'center',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-  },
-  icon: {
-    marginRight: 10,
+    marginBottom: 20,
   },
   input: {
-    flex: 1,
-    height: 50,
-    color: colors.text,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 15,
   },
-  button: {
-    backgroundColor: colors.primary,
+  locationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  locationInput: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  locationButton: {
+    backgroundColor: '#007bff',
     padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 10,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  registerButton: {
+    backgroundColor: '#28a745',
+    padding: 15,
+    borderRadius: 10,
   },
   buttonText: {
-    color: colors.text,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  link: {
-    padding: 10,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: colors.secondary,
-    fontWeight: '500',
-  },
-  error: {
-    color: colors.error,
+    color: '#fff',
     textAlign: 'center',
-    marginBottom: 15,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

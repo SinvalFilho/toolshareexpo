@@ -1,39 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { createTool, getCategories } from '../services/api';
+import { createTool } from '../services/api';
 import { ToolCreateForm } from '../types';
+import { Controller, useForm } from 'react-hook-form';
 import { Picker } from '@react-native-picker/picker';
 
 const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { control, handleSubmit, formState: { errors } } = useForm();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('');
   const [image, setImage] = useState('');
   const [userId, setUserId] = useState<number>(1);
-  const [categories, setCategories] = useState<string[]>([]);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data = await getCategories();
-        setCategories(data.category);
-      } catch (error) {
-        console.error('Erro ao carregar categorias', error);
-        Alert.alert('Erro', 'Não foi possível carregar as categorias');
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  const handleCreateTool = async () => {
-    if (!name || !description || !price || !category || !image) {
+  const handleCreateTool = async (data: ToolCreateForm) => {
+    if (!data.name || !data.description || !data.price || !data.category || !data.status || !data.image) {
       Alert.alert('Erro', 'Preencha todos os campos');
       return;
     }
 
-    const parsedPrice = parseFloat(price);
+    const parsedPrice = parseFloat(data.price);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
       Alert.alert('Erro', 'Preço inválido');
       return;
@@ -41,13 +27,13 @@ const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
 
     try {
       const toolData: ToolCreateForm = {
-        name,
-        description,
+        name: data.name,
+        description: data.description,
         price: parsedPrice,
-        category,
-        status: 'disponível',
-        image,
-        user_id: userId
+        category: data.category,
+        status: data.status,
+        image: data.image,
+        user_id: userId,
       };
 
       console.log('Criando ferramenta com os dados:', toolData);
@@ -59,7 +45,6 @@ const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
       setName('');
       setDescription('');
       setPrice('');
-      setCategory('');
       setImage('');
 
       navigation.goBack();
@@ -97,16 +82,56 @@ const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
       />
 
       {/* Picker para seleção de categoria */}
-      <Picker
-        selectedValue={category}
-        onValueChange={(itemValue) => setCategory(itemValue)}
-        style={styles.input}
-      >
-        <Picker.Item label="Selecione a Categoria" value="" />
-        {categories.map((cat, index) => (
-          <Picker.Item key={index} label={cat} value={cat} />
-        ))}
-      </Picker>
+      <Controller
+        control={control}
+        name="category"
+        render={({ field: { onChange, value } }) => (
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Categoria</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={value}
+                onValueChange={onChange}
+                style={styles.picker}
+              >
+                <Picker.Item label="Ferramentas Elétricas" value="Ferramentas Elétricas" />
+                <Picker.Item label="Ferramentas Manuais" value="Ferramentas Manuais" />
+                <Picker.Item label="Medição e instrumentação" value="Medição e instrumentação" />
+                <Picker.Item label="Caixas Organizadoras" value="Caixas Organizadoras" />
+                <Picker.Item label="Ferramentas para jardim" value="Ferramentas para jardim" />
+                <Picker.Item label="Acessórios" value="Acessórios" />
+              </Picker>
+            </View>
+            {errors.category && (
+              <Text style={styles.errorText}>{errors.category.message}</Text>
+            )}
+          </View>
+        )}
+      />
+
+      {/* Picker para seleção de status */}
+      <Controller
+        control={control}
+        name="status"
+        render={({ field: { onChange, value } }) => (
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Status</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={value}
+                onValueChange={onChange}
+                style={styles.picker}
+              >
+                <Picker.Item label="Disponível" value="disponível" />
+                <Picker.Item label="Locada" value="locada" />
+              </Picker>
+            </View>
+            {errors.status && (
+              <Text style={styles.errorText}>{errors.status.message}</Text>
+            )}
+          </View>
+        )}
+      />
 
       {/* Campo para URL da imagem */}
       <TextInput
@@ -116,7 +141,7 @@ const CreateTool: React.FC<{ navigation: any }> = ({ navigation }) => {
         onChangeText={setImage}
       />
 
-      <Button title="Cadastrar Ferramenta" onPress={handleCreateTool} />
+      <Button title="Cadastrar Ferramenta" onPress={handleSubmit(handleCreateTool)} />
     </View>
   );
 };
@@ -140,6 +165,27 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginBottom: 12,
     paddingHorizontal: 8,
+  },
+  inputContainer: {
+    marginBottom: 12,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+  },
+  picker: {
+    height: 40,
+    width: '100%',
+  },
+  label: {
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
   },
 });
 

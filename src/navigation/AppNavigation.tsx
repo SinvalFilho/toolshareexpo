@@ -3,6 +3,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Appbar } from 'react-native-paper';
+import 'react-native-get-random-values';
+
 
 import Home from '../screens/Home';
 import Login from '../screens/Login';
@@ -31,7 +33,8 @@ const MainTabs = () => (
   >
     <Tab.Screen name="Home" component={Home} />
     <Tab.Screen name="CreateTool" component={CreateTool} />
-    <Tab.Screen name="MapScreen" component={MapScreen} />
+    <Tab.Screen name="Register" component={Register} />
+    {/* <Tab.Screen name="MapScreen" component={MapScreen} /> */}
     {/* <Tab.Screen name="LocationScreen" component={LocationScreen} /> */}
     <Tab.Screen name="Login" component={Login} />
   </Tab.Navigator>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Picker } from '@react-native-picker/picker';
-import { View, StyleSheet, Text, TextInput, Button } from 'react-native';
+import { View, StyleSheet, Text, TextInput } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import useGeolocation from '../hooks/useGeolocation';
@@ -20,47 +20,50 @@ const MapScreen = () => {
 
   useEffect(() => {
     const fetchTools = async () => {
-      if (!location) return;
+      if (!location?.coords) return;
       try {
         const toolsData = await getNearbyTools(location.coords.latitude, location.coords.longitude);
-        setTools(toolsData);
-        setFilteredTools(toolsData);
+        setTools(toolsData || []);
+        setFilteredTools(toolsData || []);
       } catch (error) {
-        console.error(error);
+        setTools([]);
+        setFilteredTools([]);
       }
     };
-
     fetchTools();
   }, [location]);
 
   useEffect(() => {
-    let filtered = tools;
-
+    let filtered = Array.isArray(tools) ? [...tools] : [];
+    
     if (selectedCategory !== 'Todas') {
       filtered = filtered.filter(tool => tool.category === selectedCategory);
     }
 
     if (maxPrice) {
-      filtered = filtered.filter(tool => tool.price <= parseFloat(maxPrice));
+      const price = parseFloat(maxPrice);
+      if (!isNaN(price)) filtered = filtered.filter(tool => tool.price <= price);
     }
 
     setFilteredTools(filtered);
   }, [selectedCategory, maxPrice, tools]);
 
-  if (!location) {
-    return <View style={styles.container} />;
+  if (!location?.coords) {
+    return (
+      <View style={styles.container}>
+        <Text>Obtendo localização...</Text>
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
-      {/* Filtros */}
       <View style={styles.filters}>
         <Text style={styles.label}>Categoria:</Text>
         <Picker
           selectedValue={selectedCategory}
-          onValueChange={(value) => setSelectedCategory(value)}
-          style={styles.picker}
-        >
+          onValueChange={setSelectedCategory}
+          style={styles.picker}>
           {categories.map((category) => (
             <Picker.Item key={category} label={category} value={category} />
           ))}
@@ -74,8 +77,6 @@ const MapScreen = () => {
           value={maxPrice}
           onChangeText={setMaxPrice}
         />
-
-        <Button title="Aplicar Filtros" onPress={() => {}} />
       </View>
 
       <MapView
@@ -85,9 +86,7 @@ const MapScreen = () => {
           longitude: location.coords.longitude,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
-        }}
-      >
-
+        }}>
         <Marker
           coordinate={{
             latitude: location.coords.latitude,
@@ -98,8 +97,11 @@ const MapScreen = () => {
           pinColor="blue"
         />
 
-        {filteredTools
-          .filter(tool => tool.latitude !== undefined && tool.longitude !== undefined)
+        {Array.isArray(filteredTools) && filteredTools
+          .filter(tool => 
+            typeof tool.latitude === 'number' && 
+            typeof tool.longitude === 'number'
+          )
           .map(tool => (
             <Marker
               key={tool.id}
@@ -108,7 +110,7 @@ const MapScreen = () => {
                 longitude: tool.longitude,
               }}
               title={tool.name}
-              description={`R$ ${tool.price.toFixed(2)} / dia`}
+              description={`R$ ${tool.price?.toFixed(2) || '0.00'} / dia`}
               pinColor="red"
               onPress={() => navigation.navigate('ToolDetail', { toolId: tool.id })}
             />

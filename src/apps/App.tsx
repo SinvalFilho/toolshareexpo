@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import AppStack from '../navigation/AppNavigation';
 import useAuth from '../hooks/useAuth';
 import LoadingScreen from '../components/LoadingScreen';
+import 'react-native-get-random-values';
 
 const App = () => {
   const { isLoading } = useAuth();

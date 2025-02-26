@@ -14,12 +14,22 @@ export type Tool = {
   image?: string;
 };
 
+export type ToolData = {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  status: 'disponível' | 'locada';
+  user_id: number;
+  image?: string | null;
+};
+
 export type ToolCreateForm = {
   name: string;
   description: string;
   price: number;
   category: string;
   status: 'disponível' | 'locada';
-  image?: string;
-  user_id?: number;
+  image?: any;
+  user_id: number; 
 };

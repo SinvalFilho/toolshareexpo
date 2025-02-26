@@ -1,8 +1,10 @@
+import { FormData } from '../types/types';
 import axios from 'axios';
-import { Tool, ToolCreateForm } from '../types';
+import { Tool, ToolData } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ImagePickerAsset } from 'expo-image-picker';
 
-const API_BASE_URL = 'http://192.168.18.149:3333';
+const API_BASE_URL = 'http://192.168.18.196:3333';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -28,6 +30,11 @@ export const login = async (email: string, password: string) => {
     console.log('Resposta do login:', response.data);
     if (response.data?.token) {
       await AsyncStorage.setItem('@access_token', response.data.token);
+      
+      if (response.data.user) {
+        await AsyncStorage.setItem('@user_data', JSON.stringify(response.data.user));
+      }
+      
       return response.data;
     } else {
       throw new Error('Token não retornado no login');
@@ -38,27 +45,33 @@ export const login = async (email: string, password: string) => {
   }
 };
 
-
-export const register = async (form: { name: string; email: string; password: string; phone: string; cpf: string; type: string; address: string; latitude: string; longitude: string; image: string }) => {
+export const registerUser = async (userData: FormData) => {
   try {
-    const response = await api.post('/user', form);
-    return response.data;
+    const response = await fetch(`${API_BASE_URL}/user`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Erro ao registrar");
+    }
+    return response.json();
   } catch (error) {
-    console.error('Erro ao registrar usuário:', error);
-    throw new Error('Erro ao registrar. Tente novamente mais tarde.');
+    console.error("Erro no registro:", error);
+    throw error;
   }
 };
 
 export const getTools = async (): Promise<{ tools: Tool[] }> => {
   try {
     const response = await api.get('/tool');
-    return { tools: response.data.tools.data };
+    return { tools: response.data.tools };
   } catch (error) {
     console.error('Erro ao buscar ferramentas:', error);
     throw error;
   }
 };
-
 
 export const getToolDetails = async (toolId: number) => {
   try {
@@ -88,17 +101,17 @@ export const reserveTool = async (
   }
 };
 
-export const createTool = async (toolData: ToolCreateForm) => {
+export const createTool = async (toolData: ToolData) => {
   try {
-    const response = await api.post('/tool', toolData);
-    if (response.data) {
-      return response.data;
-    } else {
-      throw new Error('Erro ao criar ferramenta. Dados inesperados recebidos');
-    }
-  } catch (error) {
-    console.error('Erro ao criar ferramenta:', error);
-    throw new Error('Erro ao criar ferramenta');
+    const response = await api.post('/tool', toolData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error: any) { 
+    console.error('Erro ao criar ferramenta:', error.response?.data);
+    throw error;
   }
 };
 
@@ -155,8 +168,6 @@ export const getUserData = async () => {
     console.error('Erro ao obter dados do usuário:', error);
     throw error;
   }
-
-  
 };
 
 export const getChats = async (toolId: number) => {
@@ -179,5 +190,36 @@ export const sendToolChatMessage = async (toolId: number, message: string) => {
   }
 };
 
+export const uploadImage = async (file: ImagePickerAsset) => {
+  const formData = new FormData();
+  const photo = {
+    uri: file.uri,
+    name: file.fileName || "image.jpg",
+    type: file.type || "image/jpeg",
+  };
+  formData.append("image", photo as any);
+
+  try {
+    const uploadResponse = await fetch(
+      `https://api.imgbb.com/1/upload?key=${process.env.EXPO_PUBLIC_IMGBB_API_KEY}`,
+      {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    if (!uploadResponse.ok) {
+      throw new Error("Upload failed");
+    }
+
+    return uploadResponse.json();
+  } catch (error) {
+    console.error("Erro ao fazer upload da imagem:", error);
+    throw error;
+  }
+};
 
 export default api;
