@@ -1,12 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Button, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../components/styles';
 import { getTools, getNearbyTools } from '../services/api';
 import { Tool } from '../types';
-import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
+import { useFocusEffect } from '@react-navigation/native'; // Importe o useFocusEffect
+
+// Função para calcular a distância entre duas coordenadas usando a fórmula de Haversine
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Raio da Terra em km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distância em km
+  return distance.toFixed(2); // Retorna a distância com 2 casas decimais
+};
 
 export default function Home({ navigation }: any) {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -32,7 +45,17 @@ export default function Home({ navigation }: any) {
     try {
       if (userLocation) {
         const toolsData = await getNearbyTools(userLocation.coords.latitude, userLocation.coords.longitude);
-        setTools(toolsData.tools);
+        // Adiciona a distância a cada ferramenta
+        const toolsWithDistance = toolsData.tools.map((tool: Tool) => ({
+          ...tool,
+          distance: calculateDistance(
+            userLocation.coords.latitude,
+            userLocation.coords.longitude,
+            parseFloat(tool.latitude),
+            parseFloat(tool.longitude)
+          ),
+        }));
+        setTools(toolsWithDistance);
         setError(null);
       } else {
         const toolsData = await getTools();
@@ -55,6 +78,8 @@ export default function Home({ navigation }: any) {
         if (storedName) {
           setUserName(storedName);
           setIsLoggedIn(true);
+          // Se o usuário estiver logado, carregamos as ferramentas
+          await fetchTools();
         } else {
           console.error('Nome do usuário não encontrado no AsyncStorage');
           setIsLoggedIn(false);
@@ -68,16 +93,16 @@ export default function Home({ navigation }: any) {
     }
   };
 
-  // Recarrega os dados sempre que a tela estiver em foco
+  // Usamos o useFocusEffect para recarregar os dados sempre que a tela ganhar foco
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       const loadData = async () => {
+        setLoading(true); // Inicia o estado de carregamento
         await getLocation();
         await fetchUserName();
-        await fetchTools();
       };
       loadData();
-    }, [userLocation]) // Recarrega as ferramentas quando a localização muda
+    }, []) // Executa sempre que a tela ganha foco
   );
 
   const handleLogout = async () => {
@@ -149,6 +174,9 @@ export default function Home({ navigation }: any) {
       <Text style={styles.toolName}>{item.name}</Text>
       <Text style={styles.toolCategory}>{item.category}</Text>
       <Text style={styles.toolPrice}>R$ {item.price.toFixed(2)} / dia</Text>
+      {item.distance && (
+        <Text style={styles.toolDistance}>Distância: {item.distance} km</Text>
+      )}
       <TouchableOpacity
         style={styles.button}
         onPress={() => handleToolDetail(item.id)}
@@ -177,52 +205,56 @@ export default function Home({ navigation }: any) {
         <ActivityIndicator size="large" color={colors.primary} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
-      ) : userLocation ? (
-        <>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: userLocation.coords.latitude,
-              longitude: userLocation.coords.longitude,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-          >
-            <Marker
-              coordinate={{
+      ) : isLoggedIn ? (
+        userLocation ? (
+          <>
+            <MapView
+              style={styles.map}
+              initialRegion={{
                 latitude: userLocation.coords.latitude,
                 longitude: userLocation.coords.longitude,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
               }}
-              title="Minha Localização"
-              description="Você está aqui!"
-              pinColor="blue"
-            />
-
-            {tools.map((tool) => (
+            >
               <Marker
-                key={tool.id}
                 coordinate={{
-                  latitude: parseFloat(tool.latitude),
-                  longitude: parseFloat(tool.longitude),
+                  latitude: userLocation.coords.latitude,
+                  longitude: userLocation.coords.longitude,
                 }}
-                title={tool.name}
-                description={`R$ ${tool.price.toFixed(2)} / dia`}
-                pinColor="red"
-                onPress={() => handleToolDetail(tool.id)}
+                title="Minha Localização"
+                description="Você está aqui!"
+                pinColor="blue"
               />
-            ))}
-          </MapView>
 
-          <FlatList
-            data={tools}
-            renderItem={renderTool}
-            keyExtractor={(item) => item.id.toString()}
-            initialNumToRender={5}
-            maxToRenderPerBatch={10}
-          />
-        </>
+              {tools.map((tool) => (
+                <Marker
+                  key={tool.id}
+                  coordinate={{
+                    latitude: parseFloat(tool.latitude),
+                    longitude: parseFloat(tool.longitude),
+                  }}
+                  title={tool.name}
+                  description={`R$ ${tool.price.toFixed(2)} / dia`}
+                  pinColor="red"
+                  onPress={() => handleToolDetail(tool.id)}
+                />
+              ))}
+            </MapView>
+
+            <FlatList
+              data={tools}
+              renderItem={renderTool}
+              keyExtractor={(item) => item.id.toString()}
+              initialNumToRender={5}
+              maxToRenderPerBatch={10}
+            />
+          </>
+        ) : (
+          <Text style={styles.error}>Não foi possível obter a localização.</Text>
+        )
       ) : (
-        <Text style={styles.error}>Não foi possível obter a localização.</Text>
+        <Text style={styles.error}>Por favor, faça login para ver as ferramentas disponíveis.</Text>
       )}
 
       {isLoggedIn && (
@@ -290,6 +322,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.primary,
     marginVertical: 10,
+  },
+  toolDistance: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 10,
   },
   button: {
     backgroundColor: colors.primary,

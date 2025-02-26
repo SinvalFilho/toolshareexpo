@@ -12,6 +12,7 @@ export type Tool = {
   created_at: string;
   updated_at: string;
   image?: string;
+  distance?: string;
 };
 
 export type ToolData = {

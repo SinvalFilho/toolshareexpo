@@ -1,8 +1,6 @@
-import { FormData } from '../types/types';
 import axios from 'axios';
-import { Tool, ToolData } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ImagePickerAsset } from 'expo-image-picker';
+import { Tool, ToolData } from '../types';
 
 const API_BASE_URL = 'http://192.168.18.196:3333';
 
@@ -27,7 +25,6 @@ api.interceptors.request.use(
 export const login = async (email: string, password: string) => {
   try {
     const response = await api.post('/session', { email, password });
-
     return response.data;
   } catch (error: any) {
     if (error.response) {
@@ -52,6 +49,18 @@ export const getTools = async (): Promise<{ tools: Tool[] }> => {
   } catch (error) {
     console.error('Erro ao buscar ferramentas:', error);
     throw error;
+  }
+};
+
+export const getNearbyTools = async (latitude: number, longitude: number) => {
+  try {
+    const response = await api.get(`/tool`, {
+      params: { latitude, longitude },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar ferramentas próximas:', error);
+    throw new Error('Erro ao carregar ferramentas próximas.');
   }
 };
 
@@ -120,18 +129,6 @@ export const sendChatMessage = async (
   }
 };
 
-export const getNearbyTools = async (latitude: number, longitude: number) => {
-  try {
-    const response = await api.get(`/tool`, {
-      params: { latitude, longitude },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao buscar ferramentas próximas:', error);
-    throw new Error('Erro ao carregar ferramentas próximas.');
-  }
-};
-
 export const getCategories = async () => {
   try {
     const response = await api.get('/category');
@@ -169,38 +166,6 @@ export const sendToolChatMessage = async (toolId: number, message: string) => {
   } catch (error) {
     console.error('Erro ao enviar mensagem:', error);
     throw new Error('Erro ao enviar mensagem. Tente novamente.');
-  }
-};
-
-export const uploadImage = async (file: ImagePickerAsset) => {
-  const formData = new FormData();
-  const photo = {
-    uri: file.uri,
-    name: file.fileName || "image.jpg",
-    type: file.type || "image/jpeg",
-  };
-  formData.append("image", photo as any);
-
-  try {
-    const uploadResponse = await fetch(
-      `https://api.imgbb.com/1/upload?key=${process.env.EXPO_PUBLIC_IMGBB_API_KEY}`,
-      {
-        method: "POST",
-        body: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-
-    if (!uploadResponse.ok) {
-      throw new Error("Upload failed");
-    }
-
-    return uploadResponse.json();
-  } catch (error) {
-    console.error("Erro ao fazer upload da imagem:", error);
-    throw error;
   }
 };
 

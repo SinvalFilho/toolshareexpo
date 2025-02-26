@@ -10,9 +10,7 @@ import Home from '../screens/Home';
 import Login from '../screens/Login';
 import Register from '../screens/Register';
 import ToolDetail from '../screens/ToolDetail';
-import CreateTool from '../screens/CreateTool';
 import LocationScreen from '../screens/LocationScreen';
-import MapScreen from '../screens/MapScreen';
 import { RootStackParamList } from '../types/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -32,9 +30,8 @@ const MainTabs = () => (
     })}
   >
     <Tab.Screen name="Home" component={Home} />
-    <Tab.Screen name="CreateTool" component={CreateTool} />
-    {/* <Tab.Screen name="Register" component={Register} /> */}
-    <Tab.Screen name="MapScreen" component={MapScreen} />
+    <Tab.Screen name="Register" component={Register} />
+    {/* <Tab.Screen name="MapScreen" component={MapScreen} /> */}
     {/* <Tab.Screen name="LocationScreen" component={LocationScreen} /> */}
     <Tab.Screen name="Login" component={Login} />
   </Tab.Navigator>
@@ -72,19 +69,9 @@ const AppStack = () => (
       options={{ title: 'Detalhes da Ferramenta' }}
     />
     <Stack.Screen
-      name="CreateTool"
-      component={CreateTool}
-      options={{ title: 'Cadastrar Ferramenta' }}
-    />
-    <Stack.Screen
     name="LocationScreen"
     component={LocationScreen}
     options={{ title: 'Minha Localização' }}
-    />
-    <Stack.Screen
-    name="MapScreen"
-    component={MapScreen}
-    options={{ title: 'Mapa' }}
     />
   </Stack.Navigator>
 );

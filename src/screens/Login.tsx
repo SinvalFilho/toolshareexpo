@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../components/styles';
 import Icon from 'react-native-vector-icons/Feather';
 
-export default function Login({ navigation, onLogin }: any) {
+export default function Login({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,48 +25,39 @@ export default function Login({ navigation, onLogin }: any) {
       setError('Preencha todos os campos');
       return;
     }
-  
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('Por favor, insira um email válido.');
       return;
     }
-  
+
     setIsLoading(true);
-  
+
     try {
       const data = await login(email, password);
 
       if (data?.token) {
-        const userData = {
-          '@access_token': data.token,
-          '@user_name': data.name || '',
-          '@user_email': data.email || '',
-          '@user_id': String(data.id) || '',
-          '@user_type': data.type || '',
-        };
-  
-        const validUserData: [string, string][] = Object.entries(userData)
-          .filter(([_, value]) => value !== undefined && value !== null && value !== '')
-          .map(([key, value]) => [key, String(value)] as [string, string]);
-  
-        if (validUserData.length > 0) {
-          await AsyncStorage.multiSet(validUserData);
-          console.log('Login realizado com sucesso!');
-  
-          if (typeof onLogin === 'function') {
-            onLogin(data);
-          }
-  
-          navigation.navigate('Home');
-        } else {
-          setError('Erro ao salvar dados do usuário');
-        }
+        // Armazena os dados do usuário no AsyncStorage
+        await AsyncStorage.multiSet([
+          ['@access_token', data.token],
+          ['@user_name', data.name || ''],
+          ['@user_email', data.email || ''],
+          ['@user_id', String(data.id) || ''],
+          ['@user_type', data.type || ''],
+        ]);
+
+        console.log('Login realizado com sucesso!');
+
+        // Redireciona para a tela Home após o login
+        navigation.navigate('Home');
       } else {
         setError('Erro desconhecido ao realizar login');
       }
     } catch (err: any) {
-      if (err instanceof Error) {
+      if (err.response?.status === 401) {
+        setError('Credenciais inválidas. Por favor, verifique e tente novamente.');
+      } else if (err.message) {
         setError(err.message);
       } else {
         setError('Ocorreu um erro inesperado. Tente novamente.');
