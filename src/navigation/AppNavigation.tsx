@@ -11,8 +11,7 @@ import Login from '../screens/Login';
 import Register from '../screens/Register';
 import ToolDetail from '../screens/ToolDetail';
 import CreateTool from '../screens/CreateTool';
-import LocationScreen from '../screens/LocationScreen';
-import Chat from '../screens/Chat';
+import ChatScreen from '../screens/ChatScreen';
 import Map from '../screens/Map';
 import { RootStackParamList } from '../types/types';
 
@@ -33,8 +32,9 @@ const MainTabs = () => (
     })}
   >
     <Tab.Screen name="Home" component={Home} />
+    <Tab.Screen name="Chat" component={ChatScreen} />
     <Tab.Screen name="CreateTool" component={CreateTool} />
-    <Tab.Screen name="Register" component={Register} />
+    {/* <Tab.Screen name="Register" component={Register} /> */}
     <Tab.Screen name="Map" component={Map} />
     {/* <Tab.Screen name="LocationScreen" component={LocationScreen} /> */}
     <Tab.Screen name="Login" component={Login} />
@@ -78,20 +78,11 @@ const AppStack = () => (
       options={{ title: 'Cadastrar Ferramenta' }}
     />
     <Stack.Screen
-    name="LocationScreen"
-    component={LocationScreen}
-    options={{ title: 'Minha Localização' }}
+    name="ChatScreen"
+    component={ChatScreen}
+    options={{ title: 'Chat' }}
     />
-    <Stack.Screen
-      name="Chat"
-      component={Chat}
-      options={{ title: 'Chat' }}
-    />
-    <Stack.Screen
-      name="Map"
-      component={Map}
-      options={{ title: 'Mao' }}
-    />
+
   </Stack.Navigator>
   
 );

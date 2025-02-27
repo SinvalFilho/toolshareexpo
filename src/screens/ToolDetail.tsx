@@ -165,13 +165,20 @@ const ToolDetail: React.FC = () => {
   };
 
 
-  const openChat = () => {
-    if (tool && tool.user_id) {
-      navigation.navigate('Chat', { creatorId: tool.user_id });
+  const openChat = async () => {
+    if (tool && tool.id) {
+      const token = await AsyncStorage.getItem('@access_token');
+      if (!token) {
+        Alert.alert('Erro', 'Você precisa estar logado para acessar o chat.');
+        navigation.navigate('Login');
+        return;
+      }
+      navigation.navigate('ChatScreen', { toolId: tool.id, token });
     } else {
       Alert.alert('Erro', 'Não foi possível abrir o chat.');
     }
   };
+  
 
 
   if (loading) {

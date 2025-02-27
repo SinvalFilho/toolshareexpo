@@ -16,7 +16,6 @@ const Map: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
 
-  // Busca a localização do usuário
   useEffect(() => {
     const getLocation = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -24,24 +23,18 @@ const Map: React.FC = () => {
         console.error('Permissão de localização negada');
         return;
       }
-
       const location = await Location.getCurrentPositionAsync({});
       setLocation(location);
     };
-
     getLocation();
   }, []);
 
-  // Busca as ferramentas com base na localização
   useEffect(() => {
     const fetchTools = async () => {
       try {
-        let toolsData;
-        if (location) {
-          toolsData = await getNearbyTools(location.coords.latitude, location.coords.longitude);
-        } else {
-          toolsData = await getTools();
-        }
+        let toolsData = location
+          ? await getNearbyTools(location.coords.latitude, location.coords.longitude)
+          : await getTools();
         setTools(toolsData.tools);
       } catch (error) {
         console.error('Erro ao carregar ferramentas', error);
@@ -49,18 +42,15 @@ const Map: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchTools();
   }, [location]);
 
-  // Filtra as ferramentas com base na categoria e status selecionados
   const filteredTools = tools.filter((tool) => {
     const matchesCategory = selectedCategory ? tool.category === selectedCategory : true;
     const matchesStatus = selectedStatus ? tool.status === selectedStatus : true;
     return matchesCategory && matchesStatus;
   });
 
-  // Exibe um loading enquanto os dados são carregados
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -71,15 +61,10 @@ const Map: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header com gradiente */}
-      <LinearGradient
-        colors={['#2196F3', '#1976D2']}
-        style={styles.header}
-      >
+      <LinearGradient colors={['#2196F3', '#1976D2']} style={styles.header}>
         <Text style={styles.headerTitle}>Mapa de Ferramentas</Text>
       </LinearGradient>
 
-      {/* Filtros de categoria e status */}
       <View style={styles.filterContainer}>
         <View style={styles.pickerContainer}>
           <View style={styles.pickerLabelContainer}>
@@ -118,12 +103,10 @@ const Map: React.FC = () => {
             <Picker.Item label="Todos os Status" value="" />
             <Picker.Item label="disponível" value="disponível" />
             <Picker.Item label="alugada" value="alugada" />
-            <Picker.Item label="em manutenção" value="em manutenção" />
           </Picker>
         </View>
       </View>
 
-      {/* Mapa com marcadores */}
       <MapView
         style={styles.map}
         initialRegion={{
@@ -133,27 +116,17 @@ const Map: React.FC = () => {
           longitudeDelta: 0.0421,
         }}
       >
-        {/* Marcador da localização do usuário */}
         {location && (
           <Marker
-            coordinate={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }}
+            coordinate={{ latitude: location.coords.latitude, longitude: location.coords.longitude }}
             title="Minha Localização"
-            description="Você está aqui!"
             pinColor={colors.primary}
           />
         )}
-
-        {/* Marcadores das ferramentas */}
         {filteredTools.map((tool) => (
           <Marker
             key={tool.id}
-            coordinate={{
-              latitude: parseFloat(tool.latitude),
-              longitude: parseFloat(tool.longitude),
-            }}
+            coordinate={{ latitude: parseFloat(tool.latitude), longitude: parseFloat(tool.longitude) }}
             title={tool.name}
             description={`Status: ${tool.status}`}
             pinColor={tool.status === 'disponível' ? colors.income : colors.error}
@@ -164,7 +137,6 @@ const Map: React.FC = () => {
   );
 };
 
-// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -174,57 +146,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 20,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    alignItems: 'center',
   },
   headerTitle: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    textAlign: 'center',
   },
   filterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 16,
+    padding: 10,
     backgroundColor: colors.surface,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
   },
   pickerContainer: {
     flex: 1,
-    marginHorizontal: 8,
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    overflow: 'hidden',
-    padding: 10,
+    marginHorizontal: 5,
   },
   pickerLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   pickerLabel: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '500',
     marginLeft: 8,
+    fontSize: 16,
+    color: colors.text,
   },
   picker: {
-    flex: 1,
-    color: colors.text,
     backgroundColor: colors.background,
   },
   map: {
