@@ -89,4 +89,38 @@ export const reserveTool = async (reservationData: any, token: string) => {
   }
 };
 
+export const sendChatMessage = async (message: string, toolId: number, token: string) => {
+  try {
+    const response = await axios.post(
+      API_BASE_URL,
+      { message, toolId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error sending chat message', error);
+    throw error;
+  }
+};
+
+export const fetchChatMessages = async (toolId: number, token: string) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/tool/${toolId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching chat messages', error);
+    throw error;
+  }
+};
+
 export default api;

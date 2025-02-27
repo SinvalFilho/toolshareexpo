@@ -12,6 +12,7 @@ import Register from '../screens/Register';
 import ToolDetail from '../screens/ToolDetail';
 import CreateTool from '../screens/CreateTool';
 import LocationScreen from '../screens/LocationScreen';
+import Chat from '../screens/Chat';
 import Map from '../screens/Map';
 import { RootStackParamList } from '../types/types';
 
@@ -81,7 +82,18 @@ const AppStack = () => (
     component={LocationScreen}
     options={{ title: 'Minha Localização' }}
     />
+    <Stack.Screen
+      name="Chat"
+      component={Chat}
+      options={{ title: 'Chat' }}
+    />
+    <Stack.Screen
+      name="Map"
+      component={Map}
+      options={{ title: 'Mao' }}
+    />
   </Stack.Navigator>
+  
 );
 
 export default AppStack;

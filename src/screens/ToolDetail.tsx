@@ -163,7 +163,16 @@ const ToolDetail: React.FC = () => {
       setIsReserving(false);
     }
   };
-  
+
+
+  const openChat = () => {
+    if (tool && tool.user_id) {
+      navigation.navigate('Chat', { creatorId: tool.user_id });
+    } else {
+      Alert.alert('Erro', 'Não foi possível abrir o chat.');
+    }
+  };
+
 
   if (loading) {
     return (
@@ -266,6 +275,9 @@ const ToolDetail: React.FC = () => {
         <Button title="Reservar Ferramenta" onPress={handleReserve} color={colors.primary} />
       )}
       {reservationStatus && <Text style={styles.reservationStatus}>Status da Reserva: {reservationStatus}</Text>}
+
+      {/* Botão para abrir o chat */}
+      <Button title="Iniciar Chat" onPress={openChat} color={colors.primary} />
     </ScrollView>
   );
 };
@@ -324,90 +336,77 @@ const styles = StyleSheet.create({
   toolPrice: {
     fontSize: 18,
     marginBottom: 10,
-    color: '#333',
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: '600',
+    color: '#555',
   },
   toolCategory: {
     fontSize: 16,
     marginBottom: 10,
-    color: '#555',
-    textAlign: 'center',
+    color: '#666',
   },
   toolRating: {
     fontSize: 16,
     marginBottom: 10,
-    color: '#555',
-    textAlign: 'center',
+    color: '#666',
   },
   toolStatus: {
     fontSize: 16,
     marginBottom: 10,
-    color: '#555',
-    textAlign: 'center',
+    color: '#e74c3c',
   },
   detailsSection: {
-    marginVertical: 20,
-    padding: 15,
+    marginTop: 20,
+    paddingVertical: 10,
     backgroundColor: '#fff',
-    width: '100%',
-    borderRadius: 12,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginBottom: 20,
   },
   detailsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 10,
     color: '#333',
-    textAlign: 'center',
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 10,
-    color: '#333',
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 5,
-    marginBottom: 10,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  error: {
-    color: '#ff4444',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  reservationStatus: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#4CAF50',
     textAlign: 'center',
   },
   map: {
     width: '100%',
-    height: 250,
+    height: 200,
+    borderRadius: 8,
     marginBottom: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 10,
+    color: '#333',
+  },
+  input: {
+    width: '100%',
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingLeft: 10,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  reservationStatus: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#27ae60',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  error: {
+    fontSize: 18,
+    color: 'red',
+    textAlign: 'center',
   },
 });
 
