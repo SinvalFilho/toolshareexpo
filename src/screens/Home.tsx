@@ -1,24 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Button, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../components/styles';
 import { getTools, getNearbyTools } from '../services/api';
 import { Tool } from '../types';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
-import { useFocusEffect } from '@react-navigation/native'; // Importe o useFocusEffect
+import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-// Função para calcular a distância entre duas coordenadas usando a fórmula de Haversine
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 6371; // Raio da Terra em km
+  const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c; // Distância em km
-  return distance.toFixed(2); // Retorna a distância com 2 casas decimais
+  const distance = R * c;
+  return distance.toFixed(2);
 };
 
 export default function Home({ navigation }: any) {
@@ -29,14 +30,12 @@ export default function Home({ navigation }: any) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
 
-  // Obter a localização do usuário
   const getLocation = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       setError('Permissão de localização negada');
       return;
     }
-
     let location = await Location.getCurrentPositionAsync({});
     setUserLocation(location);
   };
@@ -44,9 +43,20 @@ export default function Home({ navigation }: any) {
   const fetchTools = async () => {
     try {
       if (userLocation) {
-        const toolsData = await getNearbyTools(userLocation.coords.latitude, userLocation.coords.longitude);
-        // Adiciona a distância a cada ferramenta
-        const toolsWithDistance = toolsData.tools.map((tool: Tool) => ({
+        const toolsData = await getNearbyTools(
+          userLocation.coords.latitude,
+          userLocation.coords.longitude,
+        );
+        const filteredTools = toolsData.tools.filter((tool: Tool) => {
+          const distance = calculateDistance(
+            userLocation.coords.latitude,
+            userLocation.coords.longitude,
+            parseFloat(tool.latitude),
+            parseFloat(tool.longitude)
+          );
+          return parseFloat(distance) <= 10;
+        });
+        const toolsWithDistance = filteredTools.map((tool: Tool) => ({
           ...tool,
           distance: calculateDistance(
             userLocation.coords.latitude,
@@ -78,7 +88,6 @@ export default function Home({ navigation }: any) {
         if (storedName) {
           setUserName(storedName);
           setIsLoggedIn(true);
-          // Se o usuário estiver logado, carregamos as ferramentas
           await fetchTools();
         } else {
           console.error('Nome do usuário não encontrado no AsyncStorage');
@@ -93,16 +102,15 @@ export default function Home({ navigation }: any) {
     }
   };
 
-  // Usamos o useFocusEffect para recarregar os dados sempre que a tela ganhar foco
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
-        setLoading(true); // Inicia o estado de carregamento
+        setLoading(true);
         await getLocation();
         await fetchUserName();
       };
       loadData();
-    }, []) // Executa sempre que a tela ganha foco
+    }, [])
   );
 
   const handleLogout = async () => {
@@ -170,36 +178,65 @@ export default function Home({ navigation }: any) {
   };
 
   const renderTool = ({ item }: { item: Tool }) => (
-    <View style={styles.toolCard}>
-      <Text style={styles.toolName}>{item.name}</Text>
-      <Text style={styles.toolCategory}>{item.category}</Text>
-      <Text style={styles.toolPrice}>R$ {item.price.toFixed(2)} / dia</Text>
-      {item.distance && (
-        <Text style={styles.toolDistance}>Distância: {item.distance} km</Text>
-      )}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => handleToolDetail(item.id)}
+    <TouchableOpacity 
+      style={styles.toolCard}
+      onPress={() => handleToolDetail(item.id)}
+    >
+      <View style={styles.toolHeader}>
+        <Text style={styles.toolName}>{item.name}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: item.status === 'disponível' ? '#4CAF50' : '#f44336' }]}>
+          <Text style={styles.statusText}>{item.status}</Text>
+        </View>
+      </View>
+      <View style={styles.toolInfo}>
+        <Icon name="category" size={16} color={colors.textSecondary} />
+        <Text style={styles.toolCategory}>{item.category}</Text>
+      </View>
+      <View style={styles.toolInfo}>
+        <Icon name="location-on" size={16} color={colors.textSecondary} />
+        <Text style={styles.toolDistance}>{item.distance} km de distância</Text>
+      </View>
+      <View style={styles.priceContainer}>
+        <Text style={styles.toolPrice}>R$ {item.price.toFixed(2)}</Text>
+        <Text style={styles.priceLabel}>/ dia</Text>
+      </View>
+      <LinearGradient
+        colors={['#2196F3', '#1976D2']}
+        style={styles.detailsButton}
       >
         <Text style={styles.buttonText}>Ver Detalhes</Text>
-      </TouchableOpacity>
-    </View>
+        <Icon name="arrow-forward" size={18} color="white" />
+      </LinearGradient>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        {isLoggedIn ? (
-          <>
-            <Text style={styles.greeting}>Olá, {userName}</Text>
-            <Button title="Logout" onPress={handleLogout} color={colors.error} />
-          </>
-        ) : (
-          <Button title="Login" onPress={() => navigation.navigate('Login')} color={colors.primary} />
-        )}
-      </View>
-
-      <Text style={styles.title}>Bem-vindo à ToolShare</Text>
+      <LinearGradient
+        colors={['#2196F3', '#1976D2']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          {isLoggedIn ? (
+            <>
+              <View style={styles.userInfo}>
+                <Text style={styles.greeting}>Bem-vindo,</Text>
+                <Text style={styles.userName}>{userName}</Text>
+              </View>
+              <TouchableOpacity onPress={handleLogout} style={styles.iconButton}>
+                <Icon name="exit-to-app" size={24} color="white" />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity 
+              style={styles.loginButton}
+              onPress={() => navigation.navigate('Login')}
+            >
+              <Text style={styles.loginButtonText}>Entrar / Cadastrar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
 
       {loading ? (
         <ActivityIndicator size="large" color={colors.primary} />
@@ -226,7 +263,6 @@ export default function Home({ navigation }: any) {
                 description="Você está aqui!"
                 pinColor="blue"
               />
-
               {tools.map((tool) => (
                 <Marker
                   key={tool.id}
@@ -241,7 +277,6 @@ export default function Home({ navigation }: any) {
                 />
               ))}
             </MapView>
-
             <FlatList
               data={tools}
               renderItem={renderTool}
@@ -262,7 +297,7 @@ export default function Home({ navigation }: any) {
           style={styles.addButton}
           onPress={handleAddTool}
         >
-          <Text style={styles.addButtonText}>Adicionar Nova Ferramenta</Text>
+          <Icon name="add" size={24} color="white" />
         </TouchableOpacity>
       )}
     </View>
@@ -272,87 +307,154 @@ export default function Home({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-    padding: 20,
+    backgroundColor: '#F5F5F5',
   },
   header: {
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+  },
+  userInfo: {
+    flex: 1,
   },
   greeting: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+  },
+  userName: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  loginButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  loginButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: '500',
-    color: colors.text,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  error: {
-    textAlign: 'center',
-    color: colors.error,
-    fontSize: 16,
   },
   toolCard: {
-    backgroundColor: colors.surface,
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
   },
+  toolHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   toolName: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
-  toolCategory: {
-    fontSize: 14,
-    color: colors.textSecondary,
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 20,
   },
-  toolPrice: {
-    fontSize: 16,
-    color: colors.primary,
-    marginVertical: 10,
+  statusText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  toolInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  toolCategory: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    marginLeft: 8,
   },
   toolDistance: {
-    fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 10,
+    fontSize: 14,
+    marginLeft: 8,
   },
-  button: {
-    backgroundColor: colors.primary,
-    padding: 10,
-    borderRadius: 6,
-    marginTop: 10,
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 12,
+  },
+  toolPrice: {
+    color: '#2196F3',
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  priceLabel: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  detailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
   },
   buttonText: {
-    color: '#fff',
-    textAlign: 'center',
+    color: 'white',
     fontSize: 16,
+    fontWeight: '500',
+    marginRight: 8,
   },
   addButton: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20,
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: '#2196F3',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   map: {
-    height: 300,
-    width: '100%',
-    marginBottom: 20,
+    height: 200,
+    margin: 16,
+    borderRadius: 12,
+  },
+  error: {
+    textAlign: 'center',
+    color: colors.error,
+    fontSize: 16,
+    marginTop: 20,
   },
 });

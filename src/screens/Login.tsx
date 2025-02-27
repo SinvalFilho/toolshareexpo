@@ -38,7 +38,6 @@ export default function Login({ navigation }: any) {
       const data = await login(email, password);
 
       if (data?.token) {
-        // Armazena os dados do usuário no AsyncStorage
         await AsyncStorage.multiSet([
           ['@access_token', data.token],
           ['@user_name', data.name || ''],
@@ -49,7 +48,6 @@ export default function Login({ navigation }: any) {
 
         console.log('Login realizado com sucesso!');
 
-        // Redireciona para a tela Home após o login
         navigation.navigate('Home');
       } else {
         setError('Erro desconhecido ao realizar login');

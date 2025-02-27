@@ -12,6 +12,7 @@ import Register from '../screens/Register';
 import ToolDetail from '../screens/ToolDetail';
 import CreateTool from '../screens/CreateTool';
 import LocationScreen from '../screens/LocationScreen';
+import Map from '../screens/Map';
 import { RootStackParamList } from '../types/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -21,7 +22,7 @@ const MainTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarIcon: ({ color, size }) => {
-        const icons: { [key: string]: string } = { Home: 'home', CreateTool: 'add', MapScreen: 'pin-drop', LocationScreen: 'my-location'};
+        const icons: { [key: string]: string } = { Home: 'home', CreateTool: 'add', Map: 'pin-drop', LocationScreen: 'my-location'};
         return <Icon name={icons[route.name]} size={size} color={color} />;
       },
       tabBarActiveTintColor: '#6200ee',
@@ -33,7 +34,7 @@ const MainTabs = () => (
     <Tab.Screen name="Home" component={Home} />
     <Tab.Screen name="CreateTool" component={CreateTool} />
     <Tab.Screen name="Register" component={Register} />
-    {/* <Tab.Screen name="MapScreen" component={MapScreen} /> */}
+    <Tab.Screen name="Map" component={Map} />
     {/* <Tab.Screen name="LocationScreen" component={LocationScreen} /> */}
     <Tab.Screen name="Login" component={Login} />
   </Tab.Navigator>

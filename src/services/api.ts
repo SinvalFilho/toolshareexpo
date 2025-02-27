@@ -53,24 +53,7 @@ export const getToolDetails = async (toolId: number) => {
     throw new Error('Erro ao carregar os detalhes da ferramenta');
   }
 };
-
-export const reserveTool = async (
-  toolId: number,
-  startDate: string,
-  endDate: string
-) => {
-  try {
-    const response = await api.post('/reservations', {
-      tool_id: toolId,
-      start_date: startDate,
-      end_date: endDate,
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao realizar reserva:', error);
-    throw new Error('Erro ao realizar a reserva. Tente novamente.');
-  }
-};
+;
 
 export const createTool = async (toolData: {
   name: string;
@@ -89,6 +72,20 @@ export const createTool = async (toolData: {
   } catch (error) {
     console.error('Erro ao criar ferramenta:', error);
     throw new Error('Erro ao criar a ferramenta. Tente novamente.');
+  }
+};
+
+export const reserveTool = async (reservationData: any, token: string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/reservation`, reservationData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Erro no reserveTool:', error);
+    throw error;
   }
 };
 
