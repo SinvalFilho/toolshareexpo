@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://192.168.18.196:3333';
+const API_BASE_URL = 'http://10.24.8.207:3333';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -21,7 +21,6 @@ api.interceptors.request.use(
   }
 );
 
-// Função para atualizar os dados do usuário
 export const updateUser = async (
     userId: number,
     userData: {
@@ -44,7 +43,6 @@ export const updateUser = async (
     }
   };
 
-// Outras funções de autenticação (login, register, etc.)
 export const login = async (email: string, password: string) => {
   try {
     const response = await api.post('/session', { email, password });

@@ -53,6 +53,7 @@ export default function Home({ navigation }: any) {
             userLocation.coords.longitude,
             parseFloat(tool.latitude),
             parseFloat(tool.longitude)
+            
           );
           return parseFloat(distance) <= 10;
         });
